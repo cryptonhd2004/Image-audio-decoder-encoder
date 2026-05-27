@@ -1,0 +1,16 @@
+{
+  "format": "I2A_RGB_SPLIT_V1",
+  "width": 1920,
+  "height": 1080,
+  "channels": [
+    "R",
+    "G",
+    "B"
+  ],
+  "sample_rate": 48000,
+  "files": {
+    "R": "test_R.wav",
+    "G": "test_G.wav",
+    "B": "test_B.wav"
+  }
+}
