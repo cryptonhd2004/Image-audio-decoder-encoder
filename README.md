@@ -33,7 +33,7 @@ The following examples show the same source image (`output/test.png`) reconstruc
 
 Baseline reconstruction with no audio processing applied. Output is visually identical to the original.
 
-![Clean decode](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek.png)
+![Clean decode](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/test.png)
 
 ### Chorus — single pass
 
