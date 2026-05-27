@@ -33,37 +33,37 @@ The following examples show the same source image (`output/test.png`) reconstruc
 
 Baseline reconstruction with no audio processing applied. Output is visually identical to the original.
 
-
+![Clean decode](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek.png)
 
 ### Chorus — single pass
 
 Chorus effect applied to one or more channels. The phase smearing and mild pitch modulation introduced by chorus produces soft color banding and subtle hue drift across the image.
 
-
+![Chorus single pass](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek_chorus.png)
 
 ### Chorus — second pass
 
 Second chorus pass on the same tracks. Each additional chorus pass compounds the phase shift, intensifying the color drift and adding a layered smear effect.
 
-
+![Chorus second pass](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek_chorus2.png)
 
 ### Chorus — third pass
 
 Third chorus pass. At this stage the phase accumulation is strong enough to cause visible spatial displacement of color information across scan lines.
 
-
+![Chorus third pass](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek_chorus3.png)
 
 ### Distortion
 
 Hard distortion applied to one channel. Distortion clips sample amplitudes, which maps to posterization and hard color quantization in the output image.
 
-
+![Distortion](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek_dist.png)
 
 ### Rectifier
 
 Rectifier effect applied to one channel. A rectifier folds negative sample values to positive, which effectively doubles the apparent frequency of the signal and maps to a characteristic brightness inversion pattern in the decoded image.
 
-
+![Rectifier](https://raw.githubusercontent.com/cryptonhd2004/Image-audio-decoder-encoder/main/output/rek_rectifier.png)
 
 ## Overview
 
