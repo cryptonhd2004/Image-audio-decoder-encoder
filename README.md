@@ -8,6 +8,7 @@ This repository contains two frontends over the same core idea:
 
 ## Table of contents
 
+- [Preview](#preview)
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Data model](#data-model)
@@ -23,6 +24,46 @@ This repository contains two frontends over the same core idea:
 - [Development notes](#development-notes)
 - [Roadmap](#roadmap)
 - [License](#license)
+
+## Preview
+
+The following examples show the same source image (`output/test.png`) reconstructed after applying different audio effects independently to the R, G, and B WAV tracks in a DAW.
+
+### Clean decode (no effects)
+
+Baseline reconstruction with no audio processing applied. Output is visually identical to the original.
+
+
+
+### Chorus — single pass
+
+Chorus effect applied to one or more channels. The phase smearing and mild pitch modulation introduced by chorus produces soft color banding and subtle hue drift across the image.
+
+
+
+### Chorus — second pass
+
+Second chorus pass on the same tracks. Each additional chorus pass compounds the phase shift, intensifying the color drift and adding a layered smear effect.
+
+
+
+### Chorus — third pass
+
+Third chorus pass. At this stage the phase accumulation is strong enough to cause visible spatial displacement of color information across scan lines.
+
+
+
+### Distortion
+
+Hard distortion applied to one channel. Distortion clips sample amplitudes, which maps to posterization and hard color quantization in the output image.
+
+
+
+### Rectifier
+
+Rectifier effect applied to one channel. A rectifier folds negative sample values to positive, which effectively doubles the apparent frequency of the signal and maps to a characteristic brightness inversion pattern in the decoded image.
+
+
 
 ## Overview
 
@@ -56,32 +97,33 @@ The three WAV files carry only channel payload. The JSON sidecar carries dimensi
 
 ## Repository layout
 
-A typical repository layout looks like this:
-
 ```text
 .
 ├── im_au.py
 ├── im_au_gui.py
 ├── README.md
-├── examples/
-│   ├── input.png
+├── output/
+│   ├── test.png              ← source image used for examples
 │   ├── test_R.wav
 │   ├── test_G.wav
 │   ├── test_B.wav
 │   ├── test_meta.json
-│   └── reconstructed.png
+│   ├── rek.png               ← clean decode (no effects)
+│   ├── rek_chorus.png        ← chorus single pass
+│   ├── rek_chorus2.png       ← chorus second pass
+│   ├── rek_chorus3.png       ← chorus third pass
+│   ├── rek_dist.png          ← distortion
+│   └── rek_rectifier.png     ← rectifier
 └── .venv/
 ```
-
-GitHub recommends keeping the main `README.md` in the repository root and keeping it focused on what the project does, how to use it, and how to get started.
 
 ## Requirements
 
 - Python 3.x
 - Pillow
-- Tkinter for the GUI frontend, typically included in standard Python distributions on desktop platforms.
+- Tkinter — typically included in standard Python distributions on desktop platforms.
 
-The implementation relies on the standard `wave` module, which supports uncompressed WAV handling, and on Pillow's split/merge image operations.
+The implementation relies on the standard `wave` module for uncompressed WAV handling and on Pillow's `split`/`merge` image operations.
 
 ## Installation
 
@@ -144,7 +186,7 @@ Launch the GUI with:
 python im_au_gui.py
 ```
 
-The GUI is built with Tkinter and uses standard file dialogs, form controls, and a scrollable text log. This is a good fit for a local utility because it avoids extra GUI dependencies while still providing a practical desktop workflow.
+The GUI is built with Tkinter and uses standard file dialogs, form controls, and a scrollable text log.
 
 ### GUI features
 
@@ -164,8 +206,6 @@ Each color band is stored as:
 - 16-bit sample width,
 - uncompressed PCM,
 - identical sample rate across all three channels.
-
-The Python `wave` module supports reading and writing WAV files but only for uncompressed WAV payloads, which is aligned with the project's design.
 
 ### Metadata sidecar
 
@@ -208,13 +248,13 @@ For each pixel byte `b` in the range `0..255`, the encoder computes a signed 16-
 s = (b - 128) << 8
 ```
 
-At decode time, the inverse mapping is approximately:
+At decode time, the inverse mapping is:
 
 ```text
 b = clamp((s >> 8) + 128, 0, 255)
 ```
 
-This means one pixel byte maps to one PCM sample. The mapping is deterministic and effectively lossless as long as the audio samples are not altered by processing, resampling, normalization side effects, format conversion, or time-domain edits.
+One pixel byte maps to one PCM sample. The mapping is deterministic and lossless as long as the audio samples are not altered by processing, resampling, normalization, format conversion, or time-domain edits.
 
 ## DAW workflow
 
@@ -223,24 +263,36 @@ Recommended workflow:
 1. Encode an input image into `R/G/B.wav + meta.json`.
 2. Import the three WAVs into a DAW as separate mono tracks.
 3. Apply processing independently to each band.
-4. Export each track again as mono 16-bit PCM WAV with the same sample rate.
+4. Export each track as mono 16-bit PCM WAV at the same sample rate.
 5. Decode using the original `meta.json`.
 
-This band-separated design is what makes the project useful for glitch-art and audio-driven image manipulation. Because `R`, `G`, and `B` are independent, channel-specific processing produces channel-specific visual artifacts.
+Because `R`, `G`, and `B` are independent tracks, channel-specific processing produces channel-specific visual artifacts. See the [Preview](#preview) section for concrete examples.
+
+### Effect reference
+
+| Effect | Visual result |
+|---|---|
+| Chorus | Soft color banding, hue drift, spatial smear |
+| Distortion / clipping | Posterization, hard color quantization |
+| Rectifier | Brightness inversion bands, frequency doubling pattern |
+| Delay / echo | Repeated image content offset horizontally |
+| Reverb | Diffuse color bleed, soft trailing smear |
+| EQ / filtering | Gradual brightness shift, smoothing or sharpening |
+| Time-stretch / pitch shift | Severe corruption or unrecoverable data loss |
 
 ## Failure modes
 
 ### Sample count drift
 
-A DAW can preserve apparent clip duration while still changing the exact number of PCM frames through padding, trimming, render offsets, or export settings. Since `wave` reads the actual frame count from the file header, these changes directly affect the decoded payload length.
+A DAW can preserve apparent clip duration while still changing the exact number of PCM frames through padding, trimming, render offsets, or export settings. Since `wave` reads the actual frame count from the file header, these changes directly affect the decoded payload length. Use `--fit truncate` to handle small drift.
 
 ### Format mismatch
 
-If a track is exported as stereo, floating-point WAV, compressed audio, or a different sample width, decoding should fail or produce invalid output because the implementation expects mono 16-bit PCM WAV input.
+If a track is exported as stereo, floating-point WAV, compressed audio, or a different sample width, decoding will fail or produce invalid output because the implementation expects mono 16-bit PCM WAV input.
 
 ### Aggressive processing
 
-Effects that alter timing or buffer structure, such as time-stretching, pitch shifting with resynthesis, silence trimming, or sample-rate conversion, may produce strong corruption or unrecoverable payload divergence. That behavior can be creatively useful, but it should be treated as intentional data destruction rather than transparent processing.
+Effects that alter timing or buffer structure — time-stretching, pitch shifting with resynthesis, silence trimming, sample-rate conversion — may produce strong corruption or unrecoverable payload divergence. This behavior can be creatively useful but should be treated as intentional data destruction rather than transparent processing.
 
 ## Development notes
 
@@ -258,13 +310,12 @@ Tkinter provides standard dialogs and basic desktop controls directly from Pytho
 
 ## Roadmap
 
-Potential next steps:
+- RGBA support (alpha channel as fourth WAV track)
+- 16-bit source image support
+- Batch encoding via glob patterns
+- Preview thumbnails in the GUI log panel
+- Optional lossless FLAC export
 
-- Auto-populate `R/G/B.wav` paths after selecting `meta.json`.
-- Add input and output image preview in the GUI.
-- Add drag-and-drop support.
-- Export grayscale previews of individual channels.
-- Add channel permutation modes such as `RGB`, `BRG`, or `GRB` using Pillow band merge behavior.
-- Add an intentional byte offset option for controlled data shifting.
-- Add tests for encode/decode roundtrips with untouched WAV files.
+## License
 
+MIT
